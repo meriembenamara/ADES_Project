@@ -1,22 +1,24 @@
 services:
   frontend:
     image: node:20-alpine
-    container_name: react_frontend
+    container_name: react_frontend_ADES
     working_dir: /app
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    environment:
+      VITE_PROXY_TARGET: http://nginx
     ports:
       - "5173:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     depends_on:
-      - app
+      - nginx
 
   app:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: laravel_app
+    container_name: laravel_app_ADES
     working_dir: /var/www
     volumes:
       - ./backend:/var/www
@@ -25,7 +27,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: laravel_nginx
+    container_name: laravel_nginx_ADES
     ports:
       - "8000:80"
     volumes:
@@ -36,7 +38,7 @@ services:
 
   mysql:
     image: mysql:8.0
-    container_name: mysql_db
+    container_name: mysql_db_ADES
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: laravel
@@ -47,6 +49,18 @@ services:
       - "3308:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+
+  ml_models:
+    build:
+      context: ./ml_models
+      dockerfile: Dockerfile
+    container_name: ml_models_ADES
+    working_dir: /app
+    volumes:
+      - ./ml_models:/app
+    ports:
+      - "8001:8001"
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8001 --reload
 
 volumes:
   mysql_data:

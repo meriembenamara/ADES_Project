@@ -4,4 +4,14 @@ vendor
 dist
 build
 .DS_Store
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+ml_models/artifacts/*.joblib
+ml_models/artifacts/*.json
+ml_models/artifacts/camembert_classifier/
+ml_models/logs/*.log
 

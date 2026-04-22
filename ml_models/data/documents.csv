@@ -1,0 +1,7 @@
+document_path,text,label
+"data/raw/facture_001.pdf","Facture fournisseur mars 2026 montant TTC 4850 TND reference ADES ACH 42",facture
+"data/raw/bl_001.pdf","Bon de livraison depot central quantite 120 cartons date reception 24 03 2026",bon_livraison
+"data/raw/contrat_001.pdf","Contrat CDI responsable qualite date debut 01 04 2026 salaire brut 2400 TND",contrat
+"data/raw/facture_002.pdf","Facture import fournisseur international montant 12800 TND date emission 11 02 2026",facture
+"data/raw/contrat_002.pdf","Avenant contrat employe service administratif date effet 05 05 2026",contrat
+"data/raw/bl_002.pdf","Bon de livraison agence tunis transporteur rapid move numero BL 8892",bon_livraison
