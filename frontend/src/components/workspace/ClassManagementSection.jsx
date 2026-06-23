@@ -1,6 +1,39 @@
 import { useState } from "react";
 import CategoryActionButton from "./CategoryActionButton";
 
+const actionIcons = {
+  feedback: (
+    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+      <path d="M16 19.5v-1.2a3.3 3.3 0 0 0-3.3-3.3H7.3A3.3 3.3 0 0 0 4 18.3v1.2" />
+      <circle cx="10" cy="7.5" r="3.5" />
+      <path d="M17 7h3M18.5 5.5v3" />
+      <path d="M15.5 13.5h4.2l1.3 1.4V10a2 2 0 0 0-2-2h-2.5" />
+    </svg>
+  ),
+  history: (
+    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4.5v5h5" />
+      <path d="M12 7.5V12l3 1.8" />
+    </svg>
+  ),
+  upload: (
+    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+      <path d="M12 15V4.5" />
+      <path d="m7.5 9 4.5-4.5L16.5 9" />
+      <path d="M5 16.5v1.8a2.2 2.2 0 0 0 2.2 2.2h9.6a2.2 2.2 0 0 0 2.2-2.2v-1.8" />
+    </svg>
+  ),
+  delete: (
+    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+      <path d="M4.5 7h15" />
+      <path d="M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7" />
+      <path d="M18 7l-.8 12a2 2 0 0 1-2 1.9H8.8a2 2 0 0 1-2-1.9L6 7" />
+      <path d="M10 11v5.5M14 11v5.5" />
+    </svg>
+  ),
+};
+
 function ClassManagementSection({
   classrooms,
   feedback,
@@ -63,27 +96,43 @@ function ClassManagementSection({
                         </div>
 
                         <div className="category-actions">
-                          <CategoryActionButton variant="info" onClick={() => onAction("Avis user", category)}>
-                            Avis Users
+                          <CategoryActionButton
+                            variant="info"
+                            className="icon-only"
+                            title="Avis users"
+                            onClick={() => onAction("Avis user", category)}
+                          >
+                            {actionIcons.feedback}
                           </CategoryActionButton>
-                          <CategoryActionButton variant="history" onClick={() => onAction("Historique", category)}>
-                            Historique
+                          <CategoryActionButton
+                            variant="history"
+                            className="icon-only"
+                            title="Historique"
+                            onClick={() => onAction("Historique", category)}
+                          >
+                            {actionIcons.history}
                           </CategoryActionButton>
-                          <label className="category-upload-trigger">
+                          <label className="category-upload-trigger" title="Upload PDF">
                             <input
                               type="file"
                               accept="application/pdf"
                               className="category-upload-input"
+                              aria-label="Upload PDF"
                               onChange={(event) => {
                                 const [file] = event.target.files ?? [];
                                 onUploadDocument(category.id, file);
                                 event.target.value = "";
                               }}
                             />
-                            <span className="category-action-btn upload">Upload PDF</span>
+                            <span className="category-action-btn upload icon-only">{actionIcons.upload}</span>
                           </label>
-                          <CategoryActionButton variant="danger" onClick={() => onAction("Delete", category)}>
-                            Supprimer
+                          <CategoryActionButton
+                            variant="danger"
+                            className="icon-only"
+                            title="Supprimer"
+                            onClick={() => onAction("Delete", category)}
+                          >
+                            {actionIcons.delete}
                           </CategoryActionButton>
                         </div>
                       </div>
@@ -96,27 +145,43 @@ function ClassManagementSection({
                           </div>
 
                           <div className="category-actions">
-                            <CategoryActionButton variant="info" onClick={() => onAction("Avis user", category)}>
-                              Avis Users
+                            <CategoryActionButton
+                              variant="info"
+                              className="icon-only"
+                              title="Avis users"
+                              onClick={() => onAction("Avis user", category)}
+                            >
+                              {actionIcons.feedback}
                             </CategoryActionButton>
-                            <CategoryActionButton variant="history" onClick={() => onAction("Historique", category)}>
-                              Historique
+                            <CategoryActionButton
+                              variant="history"
+                              className="icon-only"
+                              title="Historique"
+                              onClick={() => onAction("Historique", category)}
+                            >
+                              {actionIcons.history}
                             </CategoryActionButton>
-                            <label className="category-upload-trigger">
+                            <label className="category-upload-trigger" title="Upload PDF">
                               <input
                                 type="file"
                                 accept="application/pdf"
                                 className="category-upload-input"
+                                aria-label="Upload PDF"
                                 onChange={(event) => {
                                   const [file] = event.target.files ?? [];
                                   onUploadDocument(category.id, file);
                                   event.target.value = "";
                                 }}
                               />
-                              <span className="category-action-btn upload">Upload PDF</span>
+                              <span className="category-action-btn upload icon-only">{actionIcons.upload}</span>
                             </label>
-                            <CategoryActionButton variant="danger" onClick={() => onAction("Delete", category)}>
-                              Supprimer
+                            <CategoryActionButton
+                              variant="danger"
+                              className="icon-only"
+                              title="Supprimer"
+                              onClick={() => onAction("Delete", category)}
+                            >
+                              {actionIcons.delete}
                             </CategoryActionButton>
                           </div>
                         </div>

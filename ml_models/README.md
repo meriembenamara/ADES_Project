@@ -41,15 +41,20 @@ Le dossier `ml_models` couvre les deux phases du workflow PFE :
 10. Evaluation
 11. Sauvegarde du modele pret
 
+Les donnees d'entrainement peuvent venir de deux sources :
+
+- un fichier CSV local
+- les annotations sauvegardees dans le backend Laravel
+
 ### Phase 2. Prediction
 
 1. Envoyer un texte ou un document pretraite vers `POST /predict`
 2. Charger le modele sauvegarde
-3. Retourner la classe predite et le score
+3. Retourner les paires `attribute_name` / `attribute_value` extraites avec leur confiance
 
 ## Dataset minimal attendu
 
-Le fichier CSV doit contenir au minimum :
+Pour un entrainement de classification :
 
 - `label`
 - et au moins une source parmi `text`, `ocr_text`, `document_path`, `image_path`
@@ -62,6 +67,20 @@ document_path,text,label
 "docs/contrat_001.pdf","Contrat CDI responsable qualite",contrat
 ```
 
+Pour un entrainement d'extraction :
+
+- `attribute_name`
+- `attribute_value`
+- et au moins une source parmi `text`, `ocr_text`, `document_path`, `image_path`
+
+Exemple :
+
+```csv
+document_path,text,attribute_name,attribute_value
+"docs/facture_001.pdf","Facture fournisseur mars 2026 montant 4850","Montant","4850"
+"docs/facture_001.pdf","Facture fournisseur mars 2026 montant 4850","Date","mars 2026"
+```
+
 ## Lancement local
 
 ```powershell
@@ -72,11 +91,36 @@ pip install -r requirements.txt
 uvicorn api.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
+> Note: le pipeline OCR utilise `pytesseract`, `easyocr`, `Pillow` et `pdf2image`.
+> Si vous utilisez les fichiers PDF, installez aussi Poppler sur Windows et assurez-vous que `tesseract` est disponible dans le PATH.
+
 ## Endpoints
 
 - `GET /health`
 - `POST /train`
 - `POST /predict`
+
+### Train depuis le backend
+
+Vous pouvez entrainer directement depuis les annotations du backend :
+
+```json
+{
+  "data_source": "backend",
+  "backend_api_url": "http://127.0.0.1:8000/api/labelings/export",
+  "backend_token": "VOTRE_TOKEN"
+}
+```
+
+### Integration avec le backend Laravel
+
+Le backend expose déjà l’endpoint sécurisé :
+
+- `GET /api/labelings/export`
+
+Il renvoie les annotations avec : `document_path`, `text`, `ocr_text`, `label`, `class_key`, `category_key`.
+
+La pipeline ML récupère ces données, applique une vraie étape OCR sur le document/image, nettoie le texte, génère des exemples synthétiques, puis entraine un modèle CamemBERT.
 
 ## Suite logique
 

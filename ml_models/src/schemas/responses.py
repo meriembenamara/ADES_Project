@@ -16,8 +16,15 @@ class TrainResponse(BaseModel):
     precision: float
     recall: float
     f1_score: float
+    model_type: str | None = None
+    fields_count: int | None = None
+
+
+class ExtractionPrediction(BaseModel):
+    attribute_name: str
+    attribute_value: str
+    confidence: float
 
 
 class PredictResponse(BaseModel):
-    predicted_label: str
-    confidence: float
+    predictions: list[ExtractionPrediction]

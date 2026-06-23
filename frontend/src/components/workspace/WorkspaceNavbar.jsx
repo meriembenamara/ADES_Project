@@ -28,6 +28,22 @@ const navIcons = {
       <path d="M3.75 8 12 4l8.25 4L12 12zM6 10.5v4.25c0 1.8 2.68 3.25 6 3.25s6-1.45 6-3.25V10.5" />
     </svg>
   ),
+  ml: (
+    <svg viewBox="0 0 24 24" focusable="false">
+      <path d="M5 5h14v4H5z" />
+      <path d="M5 11h14v4H5z" />
+      <path d="M5 17h14v2H5z" />
+      <path d="M9 7h2v2H9zM13 7h2v2h-2zM9 13h2v2H9zM13 13h2v2h-2z" />
+    </svg>
+  ),
+  "ml-predictions": (
+    <svg viewBox="0 0 24 24" focusable="false">
+      <path d="M4.5 18.5c2.25-4.75 5-7.1 8.25-7.1 2.35 0 4.55 1.18 6.75 3.55" />
+      <path d="M5 6.5h14M5 10h8" />
+      <circle cx="16.5" cy="17" r="2.5" />
+      <path d="m18.35 18.85 1.9 1.9" />
+    </svg>
+  ),
   "control-points": (
     <svg viewBox="0 0 24 24" focusable="false">
       <path d="M6 12h12M6 7h8M6 17h5" />

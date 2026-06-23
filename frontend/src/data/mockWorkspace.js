@@ -84,6 +84,8 @@ export const primaryNavItems = [
   { id: "users", label: "Gestion des users" },
   { id: "documents", label: "Gestion des documents" },
   { id: "classes", label: "Gestion des classes" },
+  { id: "ml", label: "Entrainement ML" },
+  { id: "ml-predictions", label: "Predictions ML" },
   { id: "control-points", label: "Points de controle" },
 ];
 

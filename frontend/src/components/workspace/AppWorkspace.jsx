@@ -3,6 +3,8 @@ import { initialClassrooms } from "../../data/mockWorkspace";
 import {
   createControlPoint,
   createDocument,
+  createLabeling,
+  createTrainingSample,
   deleteControlPoint,
   deleteDocument,
   deleteUser,
@@ -10,12 +12,15 @@ import {
   fetchDashboards,
   fetchDocuments,
   fetchUsers,
+  uploadDocumentForLabeling,
 } from "../../services/workspaceApi";
 import ClassManagementSection from "./ClassManagementSection";
 import ControlPointsSection from "./ControlPointsSection";
 import DashboardSection from "./DashboardSection";
 import DocumentsManagementSection from "./DocumentsManagementSection";
 import LabelingWorkspace from "./LabelingWorkspace";
+import MLTrainingPanel from "../MLTrainingPanel";
+import MLPredictionPanel from "../MLPredictionPanel";
 import UsersManagementSection from "./UsersManagementSection";
 import WorkspaceNavbar from "./WorkspaceNavbar";
 
@@ -32,6 +37,7 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
   const [draftAttribute, setDraftAttribute] = useState("");
   const [draftAttributeSnippet, setDraftAttributeSnippet] = useState("");
   const [draftValue, setDraftValue] = useState("");
+  const [draftLabelId, setDraftLabelId] = useState(null);
   const [controlForm, setControlForm] = useState({
     name: "",
     description: "",
@@ -60,6 +66,22 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
   };
 
   useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    setUsers((prev) => {
+      const existingIndex = prev.findIndex((item) => item.id === user.id);
+
+      if (existingIndex === -1) {
+        return [user, ...prev];
+      }
+
+      return prev.map((item) => (item.id === user.id ? { ...item, ...user } : item));
+    });
+  }, [user]);
+
+  useEffect(() => {
     if (!token) {
       return;
     }
@@ -82,6 +104,20 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
       })
       .finally(() => setLoadingRemote(false));
   }, [token]);
+
+  useEffect(() => {
+    if (!token || !["users", "documents", "control-points"].includes(activeSection)) {
+      return;
+    }
+
+    fetchUsers(token)
+      .then((usersData) => {
+        setUsers(Array.isArray(usersData) ? usersData : []);
+      })
+      .catch((err) => {
+        pushMessage(`Actualisation users echouee: ${err.message}`);
+      });
+  }, [activeSection, token]);
 
   const handleAddClass = () => {
     const nextIndex = classrooms.length + 1;
@@ -140,6 +176,30 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
 
     const fileBuffer = await file.arrayBuffer();
     const documentUrl = URL.createObjectURL(file);
+    const targetCategory =
+      classrooms.flatMap((classroom) => classroom.categories).find((category) => category.id === categoryId) ?? null;
+
+    let persistedDocument = null;
+
+    try {
+      persistedDocument = await uploadDocumentForLabeling(
+        {
+          title: file.name.replace(/\.pdf$/i, ""),
+          description: targetCategory ? `Document importe pour la categorie ${targetCategory.name}` : "",
+          status: "draft",
+          class_key: classrooms.find((classroom) => classroom.categories.some((category) => category.id === categoryId))?.id,
+          category_key: categoryId,
+          created_by: user?.id,
+          file,
+        },
+        token,
+      );
+
+      setDocuments((prev) => [persistedDocument, ...prev]);
+    } catch (err) {
+      pushMessage(`Upload document echoue: ${err.message}`);
+      return;
+    }
 
     setClassrooms((prev) =>
       prev.map((classroom) => ({
@@ -151,12 +211,14 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
                 documents: (category.documents ?? 0) + 1,
                 lastUpload: new Date().toISOString().slice(0, 10),
                 activeDocument: {
-                  id: `doc-${Date.now()}`,
+                  id: persistedDocument?.id ?? `doc-${Date.now()}`,
                   name: file.name,
                   size: file.size,
                   type: file.type,
                   data: Array.from(new Uint8Array(fileBuffer)),
                   url: documentUrl,
+                  backendDocumentId: persistedDocument?.id ?? null,
+                  backendFilePath: persistedDocument?.file_path ?? null,
                 },
                 documentTitle: file.name,
                 documentSnippets: [
@@ -179,7 +241,69 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
     setDraftAttribute("");
     setDraftAttributeSnippet("");
     setDraftValue("");
+    setDraftLabelId(null);
     pushMessage(`Workspace de labeling ouvert pour "${category.name}".`);
+  };
+
+  const buildDraftLabelRecord = () => {
+    const attributeName = (draftAttribute || draftAttributeSnippet).trim();
+    const attributeSnippet = draftAttributeSnippet.trim() || attributeName;
+    const value = draftValue.trim();
+
+    if (!attributeName || !value) {
+      return null;
+    }
+
+    return {
+      id: draftLabelId ?? `lab-${Date.now()}`,
+      attribute: attributeName,
+      attributeSnippet,
+      value,
+      attributeColor: "#f2c94c",
+      valueColor: "#56ccf2",
+      isPending: true,
+    };
+  };
+
+  const handleAddDraftLabel = () => {
+    if (!selectedCategory) {
+      return false;
+    }
+
+    const labelRecord = buildDraftLabelRecord();
+
+    if (!labelRecord) {
+      pushMessage("Selectionnez un attribut et sa valeur avant d'ajouter l'attribut.");
+      return false;
+    }
+
+    setClassrooms((prev) =>
+      prev.map((classroom) => ({
+        ...classroom,
+        categories: classroom.categories.map((category) =>
+          category.id === selectedCategory.id
+            ? {
+                ...category,
+                labeledFields: draftLabelId
+                  ? category.labeledFields.map((field) =>
+                      field.id === draftLabelId ? labelRecord : field,
+                    )
+                  : [...category.labeledFields, labelRecord],
+                attributeOptions: category.attributeOptions.includes(labelRecord.attribute)
+                  ? category.attributeOptions
+                  : [...category.attributeOptions, labelRecord.attribute],
+              }
+            : category,
+        ),
+      })),
+    );
+    setDraftAttribute("");
+    setDraftAttributeSnippet("");
+    setDraftValue("");
+    setDraftLabelId(null);
+    pushMessage(`Attribut ajoute a l'extraction ciblee: ${labelRecord.attribute}.`);
+
+    return true;
   };
 
   const handleUserHistory = (userItem) => {
@@ -196,39 +320,170 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
     }
   };
 
-  const handleSaveLabel = () => {
-    if (!selectedCategory || !draftAttribute || !draftAttributeSnippet.trim() || !draftValue.trim()) {
-      pushMessage("Selectionnez l'attribut, sa zone en jaune et la valeur en bleu avant d'enregistrer.");
-      return;
+  const handleGoToTraining = () => {
+    setLabelingCategoryId(null);
+    setActiveSection("ml");
+    pushMessage("Labeling enregistre. Passage à l'interface d'entraînement ML.");
+  };
+
+  const handleGoToPredictions = () => {
+    setLabelingCategoryId(null);
+    setActiveSection("ml-predictions");
+    pushMessage("Passage a l'interface de prediction ML.");
+  };
+
+  const handleSaveLabel = async () => {
+    if (!selectedCategory) {
+      pushMessage("Ouvrez une categorie de labeling avant d'enregistrer.");
+      return false;
     }
 
-    setClassrooms((prev) =>
-      prev.map((classroom) => ({
-        ...classroom,
-        categories: classroom.categories.map((category) =>
-          category.id === selectedCategory.id
-            ? {
-                ...category,
-                labeledFields: [
-                  ...category.labeledFields,
+    const currentDraftRecord = buildDraftLabelRecord();
+    const pendingLabelRecords = selectedCategory.labeledFields.filter((field) => field.isPending);
+    const recordsToSave = currentDraftRecord
+      ? [...pendingLabelRecords.filter((field) => field.id !== currentDraftRecord.id), currentDraftRecord]
+      : pendingLabelRecords;
+
+    if (recordsToSave.length === 0) {
+      pushMessage("Ajoutez au moins un attribut avec sa valeur avant d'enregistrer.");
+      return false;
+    }
+
+    try {
+      const classKey =
+        classrooms.find((classroom) =>
+          classroom.categories.some((category) => category.id === selectedCategory.id),
+        )?.id ?? null;
+
+      let backendDocumentId = selectedCategory.activeDocument?.backendDocumentId ?? null;
+
+      if (!backendDocumentId) {
+        const createdDocument = await createDocument(
+          {
+            title: selectedCategory.documentTitle || `${selectedCategory.name} - Labeling`,
+            description: `Document de labeling pour la categorie ${selectedCategory.name}`,
+            status: "draft",
+            created_by: user?.id ?? null,
+            class_key: classKey,
+            category_key: selectedCategory.id,
+          },
+          token,
+        );
+
+        backendDocumentId = createdDocument?.id ?? null;
+
+        if (!backendDocumentId) {
+          throw new Error("Aucun document backend n'a pu etre cree pour ce labeling.");
+        }
+
+        setDocuments((prev) => [createdDocument, ...prev]);
+        setClassrooms((prev) =>
+          prev.map((classroom) => ({
+            ...classroom,
+            categories: classroom.categories.map((category) =>
+              category.id === selectedCategory.id
+                ? {
+                    ...category,
+                    activeDocument: {
+                      ...(category.activeDocument ?? {
+                        id: `doc-${Date.now()}`,
+                        name: category.documentTitle ?? createdDocument.title,
+                        size: 0,
+                        type: "application/pdf",
+                        data: null,
+                        url: null,
+                      }),
+                      backendDocumentId,
+                      backendFilePath: createdDocument.file_path ?? null,
+                    },
+                  }
+                : category,
+            ),
+          })),
+        );
+      }
+
+      const createdEntries = await Promise.all(
+        recordsToSave.map(async (labelRecord) => {
+          const createdLabeling = await createLabeling(
+            {
+              document_id: backendDocumentId,
+              user_id: user?.id ?? null,
+              class_key: classKey,
+              category_key: selectedCategory.id,
+              attribute_name: labelRecord.attribute,
+              attribute_snippet: labelRecord.attributeSnippet,
+              attribute_value: labelRecord.value,
+            },
+            token,
+          );
+
+          const createdTrainingSample = await createTrainingSample(
+            {
+              document_id: backendDocumentId,
+              user_id: user?.id ?? null,
+              class_key: classKey,
+              category_key: selectedCategory.id,
+              attribute_name: labelRecord.attribute,
+              attribute_snippet: labelRecord.attributeSnippet,
+              attribute_value: labelRecord.value,
+              labels_payload: {
+                labels: [
                   {
-                    id: `lab-${Date.now()}`,
-                    attribute: draftAttribute,
-                    attributeSnippet: draftAttributeSnippet.trim(),
-                    value: draftValue.trim(),
-                    attributeColor: "#f2c94c",
-                    valueColor: "#56ccf2",
+                    attribute: labelRecord.attribute,
+                    attribute_snippet: labelRecord.attributeSnippet,
+                    value: labelRecord.value,
                   },
                 ],
-              }
-            : category,
-        ),
-      })),
-    );
-    setDraftAttribute("");
-    setDraftAttributeSnippet("");
-    setDraftValue("");
-    pushMessage("Le labeling a ete enregistre dans la categorie selectionnee.");
+              },
+            },
+            token,
+          );
+
+          return {
+            localId: labelRecord.id,
+            createdLabeling,
+            createdTrainingSample,
+          };
+        }),
+      );
+
+      setClassrooms((prev) =>
+        prev.map((classroom) => ({
+          ...classroom,
+          categories: classroom.categories.map((category) =>
+            category.id === selectedCategory.id
+              ? {
+                  ...category,
+                  labeledFields: [
+                    ...category.labeledFields
+                      .filter((field) => !currentDraftRecord || field.id !== currentDraftRecord.id)
+                      .map((field) => (field.isPending ? { ...field, isPending: false } : field)),
+                    ...(currentDraftRecord ? [{ ...currentDraftRecord, isPending: false }] : []),
+                  ],
+                  attributeOptions: recordsToSave.reduce(
+                    (options, record) =>
+                      options.includes(record.attribute) ? options : [...options, record.attribute],
+                    category.attributeOptions,
+                  ),
+                }
+              : category,
+          ),
+        })),
+      );
+      setDraftAttribute("");
+      setDraftAttributeSnippet("");
+      setDraftValue("");
+      setDraftLabelId(null);
+      pushMessage(
+        `${createdEntries.length} attribut(s) enregistre(s) dans la base de donnees.`,
+      );
+
+      return true;
+    } catch (err) {
+      pushMessage(`Enregistrement labeling echoue: ${err.message}`);
+      return false;
+    }
   };
 
   const resetControlForm = () => {
@@ -363,6 +618,28 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
         onDelete={handleDeleteDocument}
       />
     );
+  } else if (activeSection === "ml") {
+    content = (
+      <section className="workspace-section workspace-ml-section">
+        <div className="workspace-section-header">
+          <div>
+            <h3 className="workspace-hero-title mb-0">Entrainement ML</h3>
+          </div>
+        </div>
+        <MLTrainingPanel token={token} />
+      </section>
+    );
+  } else if (activeSection === "ml-predictions") {
+    content = (
+      <section className="workspace-section workspace-ml-section">
+        <div className="workspace-section-header">
+          <div>
+            <h3 className="workspace-hero-title mb-0">Predictions ML</h3>
+          </div>
+        </div>
+        <MLPredictionPanel token={token} />
+      </section>
+    );
   } else if (activeSection === "control-points") {
     content = (
       <ControlPointsSection
@@ -387,11 +664,18 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
         onDraftAttributeChange={setDraftAttribute}
         onDraftAttributeSnippetChange={setDraftAttributeSnippet}
         onDraftValueChange={setDraftValue}
+        onDraftLabelIdChange={setDraftLabelId}
         onSnippetPick={setDraftValue}
+        onAddDraftLabel={handleAddDraftLabel}
         onSaveLabel={handleSaveLabel}
+        onGoToTraining={handleGoToTraining}
+        onGoToPredictions={handleGoToPredictions}
         onBack={() => {
           setLabelingCategoryId(null);
+          setDraftAttribute("");
           setDraftAttributeSnippet("");
+          setDraftValue("");
+          setDraftLabelId(null);
           pushMessage("Retour a la liste des classes.");
         }}
       />
@@ -425,6 +709,11 @@ function AppWorkspace({ user, token, onSignOut, submitting }) {
         submitting={submitting}
       />
       <div className="workspace-content">{content}</div>
+      <style>{`
+        .workspace-ml-section {
+          padding-bottom: 24px;
+        }
+      `}</style>
     </section>
   );
 }

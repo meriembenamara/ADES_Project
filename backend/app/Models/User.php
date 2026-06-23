@@ -47,6 +47,11 @@ class User extends Authenticatable
         return $this->hasMany(ControlPoint::class, 'assigned_to');
     }
 
+    public function labelings(): HasMany
+    {
+        return $this->hasMany(Labeling::class);
+    }
+
     /**
      * Create a new API token and return the plain token value once.
      *

@@ -25,4 +25,7 @@ Route::middleware('api.token')->group(function (): void {
     require __DIR__.'/api/users.php';
     require __DIR__.'/api/documents.php';
     require __DIR__.'/api/control-points.php';
+    require __DIR__.'/api/labelings.php';
+    require __DIR__.'/api/training-samples.php';
+    require __DIR__.'/api/ml-training.php';
 });

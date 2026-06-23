@@ -5,3 +5,9 @@ document_path,text,label
 "data/raw/facture_002.pdf","Facture import fournisseur international montant 12800 TND date emission 11 02 2026",facture
 "data/raw/contrat_002.pdf","Avenant contrat employe service administratif date effet 05 05 2026",contrat
 "data/raw/bl_002.pdf","Bon de livraison agence tunis transporteur rapid move numero BL 8892",bon_livraison
+"data/raw/facture_003.pdf","FACTURE N 2026 001542 Client ADES SMART SOLUTIONS Date 10 mai 2026 Montant HT 3500 TVA 595 TTC 4095 TND",facture
+"data/raw/bl_003.pdf","BON DE LIVRAISON REF BL 2026 0785 Fournisseur logistique rapidxpress Articles 45 colis Poids total 980 kg Destination centre distribution Sfax",bon_livraison
+"data/raw/contrat_003.pdf","CONTRAT DE TRAVAIL Type CDI Employe Ingenieur systemes Date signature 15 mars 2026 Salaire de base 3200 TND Avantages transport 250 TND",contrat
+"data/raw/facture_004.pdf","Invoice Number INV 2026 5544 Bill Date 18 mai 2026 Vendor Tech Solutions Inc Total Amount 8750 TND Payment Terms Net 30 days",facture
+"data/raw/bl_004.pdf","Delivery Note DN 2026 0234 Recipient Warehouse main office Boxes received 67 Tracking ID TRACK 98765432 Received by signature on 19 05 2026",bon_livraison
+"data/raw/contrat_004.pdf","Employment Agreement Position Manager commercial Duration 24 months Start date 01 juin 2026 Salary 2800 TND Benefits Health insurance",contrat

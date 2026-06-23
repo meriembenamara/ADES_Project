@@ -16,11 +16,18 @@ def health_check() -> HealthResponse:
 @app.post("/train", response_model=TrainResponse)
 def train(request: TrainRequest) -> TrainResponse:
     try:
-        result = train_model(dataset_path=request.dataset_path)
+        result = train_model(
+            dataset_path=request.dataset_path,
+            data_source=request.data_source,
+            backend_api_url=request.backend_api_url,
+            backend_token=request.backend_token,
+        )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return TrainResponse(**result)
 
